@@ -1,19 +1,9 @@
 # infermux
 
-Inference routing across LLM providers for the MIST stack. Route requests to the right model, track tokens and cost, report traces.
+Inference router. Part of the [MIST stack](https://github.com/greynewell/mist-go).
 
 [![Go](https://img.shields.io/badge/Go-1.24+-00ADD8?logo=go&logoColor=white)](https://go.dev/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-
-## Overview
-
-InferMux routes inference requests to configured providers, tracks token usage and cost, and reports trace spans to TokenTrace.
-
-- **Provider registry** — register any backend implementing the Provider interface
-- **Model routing** — resolve models to providers automatically
-- **Token & cost tracking** — per-request token counts and USD cost
-- **Trace integration** — every inference call produces a trace span
-- **HTTP API** — ingest via MIST protocol or direct JSON
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 ## Install
 
@@ -21,22 +11,7 @@ InferMux routes inference requests to configured providers, tracks token usage a
 go get github.com/greynewell/infermux
 ```
 
-## Usage
-
-### Start the server
-
-```bash
-go run ./cmd/infermux serve --addr :8600
-go run ./cmd/infermux serve --addr :8600 --tokentrace http://localhost:8700
-```
-
-### One-shot inference
-
-```bash
-go run ./cmd/infermux infer --model echo-v1 --prompt "Hello world"
-```
-
-### Provider interface
+## Provider interface
 
 ```go
 type Provider interface {
@@ -46,7 +21,7 @@ type Provider interface {
 }
 ```
 
-### Register providers and route
+## Route
 
 ```go
 reg := infermux.NewRegistry()
@@ -62,30 +37,20 @@ resp, err := router.Infer(ctx, protocol.InferRequest{
 })
 ```
 
-### HTTP API
+Tracks tokens and cost per request. Reports spans to [TokenTrace](https://github.com/greynewell/tokentrace).
+
+## HTTP API
 
 ```go
 handler := infermux.NewHandler(router, reg)
-http.HandleFunc("POST /mist", handler.Ingest)         // MIST protocol
-http.HandleFunc("POST /infer", handler.InferDirect)    // Direct JSON
-http.HandleFunc("GET /providers", handler.Providers)   // List providers
+http.HandleFunc("POST /mist", handler.Ingest)
+http.HandleFunc("POST /infer", handler.InferDirect)
+http.HandleFunc("GET /providers", handler.Providers)
 ```
 
-## Part of the MIST stack
+## CLI
 
-| Tool | Purpose |
-|------|---------|
-| **MatchSpec** | Evaluation framework |
-| **InferMux** | Inference routing (this repo) |
-| **SchemaFlux** | Structured data compiler |
-| **TokenTrace** | Token-level observability |
-
-Shared foundation: [mist-go](https://github.com/greynewell/mist-go)
-
-## License
-
-MIT — see [LICENSE](LICENSE) for details.
-
----
-
-Built by [Grey Newell](https://greynewell.com) | [infermux.dev](https://infermux.dev)
+```bash
+infermux serve --addr :8600 --tokentrace http://localhost:8700
+infermux infer --model echo-v1 --prompt "Hello world"
+```
